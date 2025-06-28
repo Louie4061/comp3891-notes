@@ -1,0 +1,189 @@
+Conditions for a good soln:
+1. No two processes may be simultaneously inside their critical regions.
+2. No assumptions may be made about speeds or the number of CPUs.
+3. No process running outside its critical region may block any process.
+4. No process should have to wait forever to enter its critical region.
+
+Disabling interrupts:
+Can work, no clock interrupts happen and cannot be swapped.
+A bad idea, for example what if they aren't turned back on.
+Doesn't really work for multiple CPU.
+
+Non-TLS Lock Variables:
+Not really, we need reading and writing to be indivisible
+
+Strict Alternation:
+Two busy waiting while loops, we have that after process 0 is done,
+we have that process1 is ready to go, but we have that process 0 is being blocked from entering again.
+For example, process 1 is blocking process 0, but the cpu might not even be on it. See textbook.
+Process 1 might not even be at that point of the code for example, but this method thinks that both 
+process are interested.
+
+Peterson’s Solution:
+We have an interested array, to see if the process is interested, it sets it to true
+Each process puts their process number in the variable, when entering the critical region.
+last Process to put number into variable, sits in a while loop if there is another process interested, 
+and the other process can enter when the cpu returns to it. When it exits, the process is now uninterested
+and so the other process breaks out of the while loop and enters. This makes sense for two process at least.
+This is better than strcit alternation, as we have a process can repeatedly use crit region if none interested.
+
+XCHG:, Atomic Exchange
+It atomically swaps the contents of a register and a memory location.
+It is used to implement mutexes, spinlocks, or semaphores in user-space.
+
+
+TSL
+Test, Set, Lock
+A process does indivisible operation of reading lock variable and storing non-zero value in lock.
+If the process read in a 0, it now has access to the critical region, and the non-zero value locked it.
+The CPU executing TSL instruciton locks the bus (computer circuit to get to the lock memory) until the
+TSL instruciton is done.
+
+Sleep and wakeup method:
+If a process wants to enter the critical region and it cannot,
+it is put to sleep, when the other process leaves the critical region
+it sends the process a signal to wakeup, no while loop.
+
+
+Producer Consumer Problem:
+We have a buffer, a Consumer and Producer. When the buffer is empty,
+the consumer sees it has 0 items and reads in. Swap to Producer, then we have
+it sends a wakeup call to consumer. But conumer is already awake, so when it goes back
+to consumer, it goes to sleep and wakeup call is lost.
+
+Bad Fix:
+A wakeup bit that can be used to signal to the consumer to stay awake next time it goes to sleep,
+hence signal is not lost.
+
+Semaphores:
+Similar to TLS stuff.
+An int, but has atomic actions, so that we can check and store without another process taking over.
+We have an up option and a down option. We put the process to sleep if it 0, else we have up and down
+operations to store sleep and wakeups.
+
+However, programming with them can be error-prone
+• E.g. must signal for every wait for mutexes
+• Too many, or too few signals or waits, or signals and waits in the wrong
+order, can have catastrophic results, e.g. deadlocks
+up() / down() = signal() / wait()
+
+Good Fix:
+We use Semaphores, with up and down as system calls disabling all interupts
+It is not as bad to disable interupts as these are only a few instrucitons.
+If multiple cpu, each Semaphore is protected by a TSL lock. 
+Three Semaphores: Full, Empty, mutex.
+Full = 0; we can't get less than 0, as we need something in the buffer
+Empty = numSlots;
+Mutex: is used to make sure that Full and Empty don't enter critical region at the same time.
+If Mutex is 0, then another attempt to go down on Mutex is blocked, see textbook
+
+Mutex:
+A simplified semaphore when we do not need to count,
+only has two states, locked and unlocked.
+
+Monitors:
+High Level abstraction of mutual exclusion and coordination between threads.
+Has automatic locking and unlocking. 
+Threads can wait and signal each other using condition variables.
+When we signal we have all the queues from the waiting queue want to get the lock,
+but just one of them can at a time. After, they go back to the wait() and go to the queue.
+
+Condition Variable:
+To allow a process to wait within the monitor, a condition variable
+must be declared, as
+condition x, y;
+ Condition variable can only be used with the operations wait and
+signal.
+• The operation
+x.wait();
+• means that the process invoking this operation is suspended until another process invokes
+• Another thread can enter the monitor while original is suspended
+x.signal();
+• The x.signal operation resumes exactly one suspended process. If no process is
+suspended, then the signal operation has no effect.
+
+OS/161 Provided Synchronisation Primitives
+• Locks
+• Semaphores
+• Condition Variables
+
+Examples of code for ass1 is on slides.
+
+The Dining Philosophers Problem:
+We want to not deadlock, but have multiple people eating at the same time.
+An array of semaphores, one per Philosopher. 
+We run the same code on each process, and we just have that each process
+can attempt to pick up at once, however multiple can be eating at the same time.
+We check the semaphores of our neighbours before we pick up.
+
+The Readers and Writers Problem:
+Models access to a database. 
+Bad soln:
+As each reader gets access to the database, we go down on dp, (has control to database),
+then subsequent readers go up on rc (read count), then decrement as they leave.
+Then we do an up on dp, it is possible if reading takes too long and lots of readers,
+the writer may never get a chance to go in. 
+
+Good soln:
+When a reader arrives but a writer is waiting, it is suspended behind the writer.
+There is less concurreny occuring here, and hence there is a lower performance overall.
+
+Conditions for a deadlock:
+A deadlock happens if the following 4 hold:
+Mutual exclusion condition. Each resource is either currently assign- ed to 
+    exactly one process or is available.
+Hold-and-wait condition. Processes currently holding resources that 
+    were granted earlier can request new resources.
+No-preemption condition. Resources previously granted cannot be forcibly 
+    taken away from a process. They must be explicitly released by the process holding them.
+Circular wait condition. There must be a circular list of two or more processes, 
+    each of which is waiting for a resource held by the next member of the chain.
+
+In general, four strategies are used for dealing with deadlocks.
+1. Just ignore the problem. Maybe if you ignore it, it will ignore you.
+2. Detection and recovery. Let them occur, detect them, and take action.
+3. Dynamic avoidance by careful resource allocation.
+4. Prevention, by structurally negating one of the four conditions.
+
+THE OSTRICH ALGORITHM:
+Don't worry about it if it does not happen very often, adding more software can just
+mean more hardware failures.
+
+Deadlock Detection and recovery:
+Detection where one resource of each type:
+Construct a graph, with what is holding and what is wanting and if a cycle it is deadlocked.
+e.g., a holds 1 and wants 2, b holds 2 and wants 3, c holds 3 and wants 1. 
+There is an example algo pg 476 of textbook to detect, pretty much just the cycle check algo.
+
+Deadlock Detection with multiple resources
+We use a matrix algorithm, should ask if this is examinable as it was not covered.
+
+Recovery from Deadlock:
+preemption: take away a resource from the current owner and give it to another process.
+rollback: when deadlock, take the process back to a previous state where it does not have resource
+killing processes, ideally one that can be rerun easlily without losing too much info.
+
+Deadlock avoidance:
+Safe states: we have a hypertable for two+ processes, where we have states that are considered safe.
+we are not allowed to enter certain regions in the table.
+Safe and unsafe states: we use the banker scheduling algorithm to look at the states,
+can be generalised with matrices for multiple resources.
+
+Deadlock prevention:
+Attack mutual exclusion: never assign a resource unless absolutely necessary and prevent
+processes from obtaining unless absolutely necessary.
+Attack hold and wait: All processes need to request all of their resources before getting.
+Attack no preemption: some resources can be virtualised and can be taken away. an example
+    is to change your printer to print to disk instead of stdout, virtualise.
+Attack the circular wait: provide a global numbering resources must be got in. Or have a process
+must release their current resource before getting another.
+
+Other issues:
+two phase locking: where you need two locks at once and held 
+    because both need the other lock and have the first.
+a livelock, (where just releasing your resource before you acquire again is bad).
+communication deadlocks: Happens in cooperating systems (e.g., processes that exchange messages).
+    No physical resources are involved.
+    A process sends a message and waits for a reply, but the message gets lost, so:
+    A waits for B’s reply, B waits for A’s request
+Starvation: having algorithms that prevent a certain process from getting hte resource.

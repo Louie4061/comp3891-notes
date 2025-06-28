@@ -1,0 +1,241 @@
+The disk:
+Large capacity – more than what a process's address space can hold.
+Persistence – data must survive after the process ends or the system crashes.
+Shared access – multiple processes should be able to access the same data.
+
+Ram:
+Memory is limited and temporary.
+Data is lost when:
+The process ends.
+The system crashes.
+Memory can't be easily shared between processes.
+
+How the disk is formatted:
+Boot sector, 
+File allocation tables,
+roout direcory region, top level list of file and folder, (not sure if still used)
+data region, contents of files and directories,
+
+Solution: Use Disks (or SSDs)
+Magnetic disks and SSDs provide:
+Non-volatile storage.
+Support for read/write operations on fixed-size blocks.
+Tapes and optical disks are mainly used for backups.
+
+Just like the OS abstracts hardware into:
+Processes (for CPU)
+Address spaces (for memory)
+It abstracts disk storage into files.
+
+What Is a File?
+A logical unit of information managed by the OS.
+Files are:
+Persistent – survive process termination.
+Independent – one file doesn’t affect another.
+Accessed by multiple processes.
+
+The File System
+The part of the OS that:
+Manages files.
+Handles naming, protection, access, and structure.
+From the user’s view:
+The file system defines what files are, how they behave, and what operations are possible.
+
+Files:
+File naming:
+the extension is a two part name.c, for example.
+When an OS reads a file, all it sees are bytes.
+
+What are files:
+We just consider a file to have some bytes. 
+Another aproach is to consider a file to be sequenced into 80 byte records.
+Thirdly, we have a file structure that is a tree of records, each containing a key field.
+This is not used on unix.
+
+File types:
+Regular have text.
+Regular files, directories are system files for structure of file system.
+Alos, character, block,  
+Easy to connect output/input between programs (e.g., shell pipelines). with text
+but with binary Executable files (e.g., UNIX): Contain sections like header, text, data, relocation info, and symbol table.
+Check textbook to see image.
+
+File acess:
+Early operating systems provided only one kind of file access: sequential access.
+With disks we got: Files whose bytes or records can be read in 
+any order are called random-access files. We have the lseek way to do this.
+
+File Attributes:
+We have time of creating, permissions, size etc. attributes / metadata
+Some older computers could not have files too big.
+See all the attributes in textbook.
+
+File Operations:
+We have the following system calls:
+Create, Delete, Open (allow the system to fetch the attributes and list of 
+disk addresses into main memory for rapid access),
+Close(When all the accesses are finished, the attributes 
+and disk ad- dresses are no longer needed)
+Read, Write, Append, Seek, Get attributes, Set attributes, Rename.
+
+directories:
+root directory is the single directory containing all of the files,
+we have a file tree to find stuff. Each file has an absolute path name,
+from the root directory. relative path name. This is used in conjunction 
+with the concept of the working directory. 
+Each process has its own working directory, 
+
+directory operations:
+Create, Delete, Opendir, Closedir, Readdir, Rename, Link,
+Linking allows files to appear in multiple directories (using pathnames)
+Unlink. symbolic link (not sure atm)
+
+File System Layout:
+fs are stored on disks. 
+first part is MBR, used to boot the computer. when BIOS reads and executes the MBR.
+this MBR program reads in locate the active partition, read in the boot block.
+superblock contains everything about the fs.
+files are stored in blocks so there can be space wasted.
+
+benefits of contig:
+simle to implement, as we can have the adress if the first file in disk, and number of bytes
+fast lookup as we can use a seek from the first block.
+when we remove files it can be bad. 
+
+benefit of list:
+no space is lost, but takes n-1 to find a file.
+the ptr now takes up space, so it doesn't fit as well in powers of 2.
+
+table:
+FAT, file allocation table.
+we have a ptr in a table about where a block starts.
+Only drawback is some extra memory.
+
+I-nodes:
+index node, lists attributes and disk adress of file blocks
+benefits are that I-node only needs be in memory when the file is open.
+More memory efficient as table proportional to disk,
+while I-nodes is proportional to open files. 
+Issue is if we only have fixed room for our I-nodes,
+one soln is to have the last block pointing to more disk space
+
+Implementing directories:
+directories store the disk blocks of the files.
+some directories also store the attributes of the files. (else with I-nodes).
+we have reserved characters for the length of the file name.
+
+Fixed-length file name approach – Reserving a set number of 
+characters (like 255) for each file name in a directory. Simple,
+but inefficient due to wasted space.
+Variable-length entries (In-line storage) – Each entry has a fixed 
+portion with attributes, followed by a file name of varying length. 
+Downsides include fragmentation when files are removed and potential page faults.
+Heap-based storage – Directory entries remain a fixed length while file 
+names are stored separately in a heap, reducing fragmentation but requiring 
+additional heap management.
+Search optimization – Linear searching is slow for large directories, so methods like:
+Hash tables – Files are hashed into slots for faster lookup but require 
+more complex administration.
+Caching – Frequently searched files are cached for quick access.
+
+Shared files:
+Files are linked. The fs is now a Directed Acyclic Graph, or DAG
+complicates maintenance, 
+when a change is made to the file, if we append a new block,
+only one of the directories may have it down that a new block was appended.
+This is as we store all the blocks where there is a file normally?
+soln1: have a little data structure that stores the size of the directory and stuff,
+have the directories point to this data structure.
+soln2: We have that B creates a new file of type link to get C's file.
+This means when B tries to read that file it just takes it to file C. 
+This is called symbloc linking and is different to hard linking.
+
+Drawbacks:
+I-node records file owner as C if B links to it. we have a link count in I-nodes.
+Problem is if C removes the file. And hence B will point to the wrong file as well.
+If a soln still more work as C needs to work. Need to read more, still confused.
+
+Log structured file systems, LFS:
+over time CPU gets faster but disk does not. Memory is getting larger.
+
+Floppy disk: bytes read sequentially,
+Flash memory: supports random access, e.g. ssd
+Application goes through all the layers of the unix storage stack.
+
+OS job to provide an interface into named files,
+Physical devices have different attributes so we have different file systems
+to accomadate for this. 
+
+With a spinning disk the point is to make all the disk very accessable 
+as it is spinning quickly, with the tape spoolt, it has alot of surface area,
+it can be used for backups but not random acess.
+
+Btw, spinning disk is the same as a hard drive. It uses magnetic storage, has a read and write head.
+Most of the worlds storage is on hard drives, although flash is more easily accessable.
+It is actually quite slow with the spinning disk at time if you need a certain part,
+but just miss it. Technique is to keep the contents associated logically together on disk.
+We really want Physically together. 
+
+Maps symbolic file names into a collection of block adresses. The fs keeps track of
+which blocks belong to while files. In what order the blocks for the file, which blocks are
+free for allocation. Given a logical region of a file, track the corresponding blocks on disk,
+stored in the fs metadata.
+
+Contiguous:
+Files have blocks, ideally contiguous. Can be bad as we can't grow files sometime. We
+don't know how big the file needs to be before we are done writing it with unix.
+Term is external fragmentation, space is fragmented. Useful when we aren't going to change the
+file structure. 
+
+Dynamic allocation () ->
+Whenever we find a free block we just allocate to it. e.g. malloc
+Files get scattered, need info to say where they are, slower.
+
+Linked list allocation, we have the a bit of info in the blocks that tell us about the next part.
+We have linked list for free space also, but it is not good as when allocate can't optimise for contiguous. 
+No random access.
+
+FAT: file allocation table, we have a block ptr on disk, and when we start we load these onto ram.
+It contains the number of the next block of a file, so we don't make disk queries to follow the linked list,
+reserved values for empty blocks. Faster. We need more memory for this however.
+Lives at one region of the file system.
+We don't have as much memory on our ram this way. Two copies of the fat to avoid 
+redundency, in case one of the fat breaks, we could accidentally erase alot of memory if we mess up.
+
+Inode-based FS structure:
+Seperate table for each table, only keep table for open files in memory.
+Fast random access, most popular FS structure today. The advantage is we don't
+have to load everything onto memory like you did with the FAT.
+Implementation issues:
+Managing the free space that is not in any other file.
+Approapch1 : linked list, approach2: bitmaps, saves alot of space as 1 bit per block
+ap1: good if few free blocks, faster when lookinf for next free block if not many, 
+Simple, can have background try and link conriguous regions
+ap2: more compact for large blocks with lots of free space, can be slower if not many free.
+Simple to find contig, takes up alot of memory though.
+
+External fragmentation:
+Memory exists but is unusable as not contiguous.
+e.g. calling malloc for a big number where every second block is being used.
+
+Internal fragmentation:
+Memory allocted is larger than requested, hence we waste memory.
+We give heaps of space usually to avoid external fragmentation.
+
+Implementing file systems:
+
+Directory is in a fixed format that is specific to the file system.
+Has an inodel, data blocks etc. Is pretty much a lookup table for inodes.
+Some directory has fixed file system names hence the DOS 8+3 restriction.
+These days we have variable sized directories.
+
+Searching directory listings:
+Linear scan,
+Hash lookup,
+B-tree
+
+File can have multiple names with linking. 
+
+Trade-off in FS block size:
+Based on what we choose, it can benefit the bigger or smaller files to managed
+internal and external fragmentation. Larger blocks mean less metadata.

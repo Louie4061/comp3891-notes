@@ -1,0 +1,128 @@
+Early computer:
+Early computers ran jobs in batches — a stack of jobs would be fed one after another.
+Each job would run without user interaction until completion.
+I/O operations were slow compared to CPU speed.
+Programs used I/O libraries to perform input/output operations.
+These libraries often had blocking calls — meaning when a program requested I/O, 
+it had to wait until that operation finished before continuing.
+-   hence we had poor hardware utilization
+
+What we have now is a multitasking OS, this leads to:
+
+Multiprocessing OS
+-   this means we can use more one or more CPU core at a time, multiple CPU
+• multi-threading
+interference from the multiple processes wanting resourecs.
+
+Dedicated servers:
+Hardware resources (CPU, RAM, disk) are reserved for that one server.
+The application may not need all the resources all the time however,
+
+Server VM:
+Host is our actual computer hardware
+The hypervisor runs directly on the hardware, partitons our servers,
+virtualises the hardware, like the parent OS in some sense.
+in this case we can have multiple virtual machines sitting
+next to each other, each one is its own OS and server
+(don't really know what server is),
+the hypervisor. We have a virtual swithc and physical swith that help
+virtualise the networks.
+
+Containers:
+e.g. solaris zones
+
+Barriers to server consolidation:
+Clashing network ports, Clashing user IDs (In UNIX/Linux systems, each user has a user ID (UID).)
+Some applications assume they can write to places like: /var/log/app.log, /etc/app.conf,
+hence we have issues with (Hard-coded files).
+Security & quality-of service requires isolation, we don't want overlapping resources.
+We need isolation so taht we can individual set resource limits.
+
+In traditional UNIX/Linux systems, root is the superuser with complete control over everything.
+To manage software, users, and configs, sysadmins usually need root.
+
+Use Solaris Zones, where:
+Each zone can have a zone root user (powerful inside the zone)
+But that user has no control over the global system or other zones
+Virtualises OS API rather than processor ISA
+OS API:
+	Zones simulate the operating system interface (e.g., process management, 
+    file systems, network), not the whole machine.
+ISA: The low-level instructions a CPU understands (e.g., x86, ARM).
+
+
+Strong isolation
+
+Hardware partitioning for multiple VM:
+It means dividing the computer’s physical resources — 
+like CPU, memory (RAM), storage (disk), and network interfaces — so each VM gets its own share.
+Security & quality-of service requires isolation,  is
+
+Purpose of Solaris Zones
+
+Example of when we may need zones: "Use different configs
+    Might conflict (e.g., use the same ports or libraries)"
+An example would be if it blows up in one we are fine in the other zones.
+
+Solaris Zones is a server consolidation technology designed to improve resource 
+utilization by running multiple isolated workloads on a single Solaris OS instance.
+(this is saying we have one OS Kernel for multiple virtual machines on our computer)
+
+Compared to VMs: Zones use less memory, CPU, and storage because they don’t each need their own OS.
+
+It provides namespace isolation, security isolation, and resource management 
+without requiring multiple OS instances (unlike traditional virtual machines).
+security: (it keeps all of our stuff isolated within our zones between virtual machines)
+resource: shares cpu time across all vm
+
+Design Principles
+
+Lightweight Virtualization: Zones create isolated "sandboxes" for applications, 
+ensuring they cannot interfere with each other.
+# with hardware virtualization a vm has to pretend it has acess to the hardware etc,
+# we don't do this with zones and hence we save extra cpu, memory and time.
+No Performance Overhead: Unlike hardware virtualization, 
+Zones operate within a single OS kernel, minimizing performance impact.
+# what the global manager usually has to do: (Install all software for every team or app,
+    up users and permissions for every group, Keep different applications from conflicting with each other)
+# zone managers don't require acess to the whole system, just their zone
+Ease of Management: Global administrators retain full control, 
+while zone administrators can manage their own environments.
+
+Key Features
+
+Process Isolation: Processes in one zone cannot see or affect processes in another.
+File System Isolation: Each zone has its own file system hierarchy, preventing cross-zone access.
+Network Virtualization: Zones have independent IP stacks, preventing network interference.
+Security: Reduced privileges prevent zone-breakout attacks.
+Resource Management: CPU, memory, and I/O can be allocated per zone.
+State Model & Administration
+Zones have lifecycle states: Configured → Installed → Ready → Running → Shutting Down → Down.
+Simple CLI tools (zonecfg, zoneadm, zlogin) allow easy creation and management.
+Performance & Use Cases
+Minimal performance degradation (typically <5%).
+Used for server consolidation, web hosting, development/testing, and security hardening.
+Sun’s IT department successfully deployed multiple applications (web servers, databases) in isolated zones on a single server.
+Comparison to Alternatives
+Unlike hardware partitioning (expensive, inflexible) or full virtualization (high overhead), Zones provide an efficient, OS-integrated solution.
+Similar to FreeBSD Jails but with deeper Solaris integration and broader commercial support.
+
+Boundaries:
+Virtualise ABI: Zones
+Virtualise ISA: VM
+
+API — Application Programming Interface
+How one software component talks to another — like how your app uses the OS or libraries.
+
+ABI — Application Binary Interface
+Defines how software and OS interact at the binary level 
+— not just what functions exist, but how they are called in machine code.
+- Calling conventions (how function arguments are passed — in registers or stack?)
+- Data type sizes (e.g. how big is an int?)
+- Memory alignment rules
+- Register usage
+- System call numbers
+
+ISA — Instruction Set Architecture
+arm or x86,
+The binary machine code instructions (like MOV, ADD, JMP)

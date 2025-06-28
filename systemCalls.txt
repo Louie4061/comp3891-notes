@@ -1,0 +1,30 @@
+One of the main functions of an OS is abstraction for the user.
+Things like files, processes, and memory.
+Interacted with via system calls (e.g., read, write, fork).
+
+Resource Management:
+Memory, CPU, disk, etc., handled mostly invisibly by the OS.
+
+The interface between user programs and the OS mainly involves system calls.
+e.g. read
+
+ Steps When a System Call is Made
+User program pushes parameters onto the stack.
+
+Calls the library procedure read().
+Library code sets the system call number (e.g., in a register).
+Executes a TRAP instruction:
+Switches from user mode to kernel mode
+Transfers control to the OS
+OS identifies the system call using the number.
+Dispatches to the appropriate handler (e.g., file system code).
+Handler executes, then returns control back:
+Either to the library procedure or directly to the user program
+Unless the process is blocked (e.g., waiting for input)
+Stack is cleaned up, and program resumes.
+
+POSIX defines ~100 standard procedure calls. / some map to system calls, some don't
+Process management (fork, exec, wait)
+File operations (open, read, write, close)
+Directory management
+I/O operations

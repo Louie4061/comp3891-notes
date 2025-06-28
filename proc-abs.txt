@@ -1,0 +1,4 @@
+Early Computers:
+Batch Processing, A method of running multiple jobs (programs) 
+on a computer without user interaction.
+

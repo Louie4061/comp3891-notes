@@ -1,0 +1,42 @@
+We can have threads defined in the user or kernel space.
+We have pthread satisfies POSIX, the portable OS criteria.
+
+User Space:
+We have that threads are handled by the process. The OS does not know anything about 
+user space threads. Rgus cab be good as it is faster than trapping into the kernel when
+swapping. We have that the schedule is also more customisable.
+Each process has its own thread table.
+We have that it can be bad as each time a thread calls read, the process is blocked
+even if the other threads are ready to go.
+If a thread accesses memory that's not currently in RAM (a page fault), 
+the OS (which doesn’t see individual threads) blocks the entire process, 
+even though other threads could keep running.
+If one thread runs forever (e.g. a loop), others can’t 
+run unless it voluntarily yields control.
+
+In real applications sometimes:
+Since system calls enter the kernel anyway, 
+it’s better to let the kernel manage threads, 
+so it can switch when one blocks
+
+Kernel Space:
+The OS keeps a global thread table with each thread’s 
+info (registers, state, etc.).
+No per-process thread tables needed in user space.
+If one thread blocks (e.g. on I/O or a page fault), 
+the kernel can run another thread, even within the same process.
+More overhead: Thread creation, switching, and destruction 
+involve costly system calls.
+
+Challenges with Kernel Threads:
+
+Fork:
+If a process with multiple threads forks, 
+should the child get all the threads or just one?
+Best answer depends on what the process does next 
+(e.g. calling exec() or continuing execution).
+
+Signals:
+Traditionally, signals are sent to processes, not threads.
+It's unclear which thread should handle the signal.
+Possible solution: threads register for specific signals, but conflicts can occur.

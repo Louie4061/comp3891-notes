@@ -1,0 +1,63 @@
+User level threads
+Hence user level threads can be cheaper. Blocking blocks all threads in a process
+so user level threads can be bad. e.g. I/O page faults. You can't use concurrency
+in the hardware like you would get with multiple cpu.
+
+Kernel level threads.
+Expensive to cross the kernel level boundary.
+Kernel objects, very lightweight, they share resources in the kernel.
+They are more expensive as they require kernel entry, e.g. switching, sync
+Benefits, blocking only responsible for the one thread. 
+They are good for thread level parallelism on a multiprocessor.
+Performance, see slides. Shows the Performance all.
+User level threads were faster, than kernel, but kernel faster than process.
+Kernel threads have a scheduler in the kernel.
+
+Hybrid multithreading, the user level threads are mapped by kernel level threads,
+hence can be used for cpu, think about what will get blocked.
+A process can have a number of kernel threads mapping to the user threads.
+Benefits: allows us to get real thread parallelism on multiprocessor.
+Blocking can still be a thing.
+
+Syscalls vs upcalls:
+
+Syscall:
+Trap into a kernel, syscall is a downcall. We go from user mode, trap into the kernel.
+The hardware enforces the kernel entry and switches to kernel mode. The kernel does its stuff.
+We the go back to one instruction afterwards in our user process when we are done with everything.
+
+Upcall:
+Goes from the kernel and takes us to userland. An example is dividing by zero, 
+kernel wants to send signit to the thread. Executes on behalf of the user. e.g.
+unix signals, if something happens execute this. Allows the kernel to pass info to user,
+or obtain instructions from the user.
+
+Schedulers use upcalls to communicate with the user level schedule,
+it uses activations, it is managed by the kernel, these are more kernel managed,
+use to support upcalls. Alternative to not block user threads, as soon as the kernel
+finds that the user thread is blocking, it invokes the user level scheduler to inform the user
+space it is blocked, at the end the kernel tells user schedule it is fine. Might be different
+with asynchronous I/O. 
+
+virtual cpu means kernel level thread, could hold an actual cpu.
+Upcalls to user level schdeucler:
+new: allocated a new virtual cpu, can schedule a user level thread
+pereempted: deallocated a virtual cpu, can schedule one less thread
+blocked: notifies the thread has blocked, can schedule another user level thread
+unblocked: opposite
+
+Scheduler activations
+Activations (in the context of user-level threads or hybrid threading) are notifications 
+or callbacks the kernel uses to inform the user-space scheduler about 
+thread-related events (e.g. blocking, preemption). Activations are cheap, you get the
+full Benefits of kernel level threads,
+blocking is better as you can just move it onto another user level thread. See table for Performance.
+
+Page swapping, putting page into disk then swapping, where more virtual memory than actual memory.
+There is always some memory mapped to processes that is unused, kernel needs to know which memory is hot,
+which is hard, it should ussually throw the cold memory out to disk.
+
+Still a little bit confused about the workings of activations.
+
+Adoption:
+See slides.

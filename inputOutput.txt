@@ -1,0 +1,53 @@
+This is I/O stuff:
+
+A random note - processes can communicate by pipes.
+              - The cpu timer is just a circuit you can think of like other mcu
+
+Input is the data we send to the computer system, 
+while output is the data that is processed and comes from the system
+
+OS -> controller -> device
+Each device is associated with a specific IRQ signal.
+
+I/O units have a mechanical and electronic component
+
+I/O devices are either block or character devices.
+Block: stores info in fixed size blocks. e.g. Hard Disk, USB, Blu-Ray Disk. 
+e.g. tapes contain a sequence of blocks, these are read as they spin around.
+Rewinding to Nth block is the same as a disk doing a seek.
+Character: delivers or accepts a stream of characters. No seek operation, not
+addressable. Printers, network interface, mouse are character devices.
+
+Devices also can create hardware interrupts to communciate the device needs attention
+from the operating system.
+
+Drivers:
+A device driver is a piece of software that enables communication 
+between an operating system or application and hardware or peripheral devices
+
+Device Controllers:
+The electronic component of the device. On personal computers 
+it takes the form as a chip. Can handle many devices. The actual device itself could
+be the circuit for the keys of a keyboard maybe. The controller raises interrupts.
+
+Memory Mapped I/O
+Controller has a few registers to connect with cpu, stored in main memory.
+These registers have state, commands running and can be modified.
+The device can map their registers into main memory
+The OS can write to these registers to command the device via the controller.
+Devices have a data buffer the OS can write to.
+
+Port
+Each register is assigned an I/O port number. The set contains the I/O
+port space. This is not part of main memory.
+
+Hardware interrupts:
+From the device for example.
+
+software interrupts:
+Fro the cpu upon executing an instruction, e.g. a syscall.
+Or interacting with a device driver to read some input. The kernel
+will catch and handle these interrupts. 
+
+With I/O interrupts, they are ussually to say to a device driver that they 
+can now read the key for example.

@@ -1,0 +1,64 @@
+Drawbridge Library OS
+
+Drawbridge is a Microsoft Research project that created a lightweight, 
+secure, and fast way to run Windows applications in isolation.
+
+A Library OS is an operating system packaged as a library that applications link to.
+Instead of calling a host OS directly (like Windows or Linux), the app makes calls 
+to the Library OS, which handles them.
+In Drawbridge, the LibOS provides Windows API support without requiring a full Windows 
+OS inside the container.
+
+A picoprocess is a very lightweight isolated environment — smaller than a full VM.
+It doesn’t run a full OS kernel, but it uses the host kernel only for 
+very minimal services like CPU scheduling, memory, and I/O.
+Think of it as a super-minimal VM that runs just one application and its LibOS.
+
+Isolation	Each app is sandboxed — secure from other apps
+Efficiency	Far lighter than a traditional VM — fast startup, low memory
+Compatibility	Can run unmodified Windows apps inside the Library OS
+Security	Attacks inside a picoprocess can’t escape easily
+Portability	Easier to move apps between systems (in theory)
+
+Ideas from Drawbridge influenced:
+Windows Subsystem for Linux (WSL)
+Project Verona
+Azure security sandboxing
+
+Monlothic kernel, e.g. linux:
+In a monolithic architecture, the operating system kernel is designed to provide 
+all operating system services, in a single, large binary.
+faster.
+any vulnerabilities or bugs in the kernel can potentially affect the entire system.
+has all the user services in the main binary, see slides image
+
+Microkernel/exokernel OS:
+A Microkernel, which only contains basic functionality
+user services and kernel services are implemented in different address spaces.
+File system is a user-space server here, but not in monolithic kernel.
+
+Library OS:
+• Little/no security enforcement
+• Simplified resource management
+• Application-tailored policies
+• Linked against application
+
+Traditional library OS changes API
+– loss of portability
+
+Idea: refactor OS:
+• (mostly) API-compatible OS services
+in library
+• uses small subset of host OS (kernel)
+services
+
+The underlying OS API is smaller
+• Easier to get correct
+• Easier to make secure
+
+“Unikernel”
+Library OS re-invented
+• A library OS running in a VM
+• Also “rump kernel” etc…
+
+hardware -> hypervisor (virtual machine monitor) -> unikernel -> process
