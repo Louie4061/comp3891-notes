@@ -1,0 +1,13 @@
+Hierchy of stores, we want to use stores higher in the hrcy more often,
+e.g. registers are fastest. 
+we have many fewer registers.
+magnetic tape slowest but cheapest.
+the hardware can keep stuff in the cache memory.
+cpu cache is fast memory placed between cpu and main memory.
+ 
+effective access time:
+T_eff = H * T_1 + (1-H) * T_2.
+
+Moving head mechanism:
+read - write head. access time is slow as the head spins and hence more misses.
+same as when we are on google, we save some stuff on disk if internet is bad.

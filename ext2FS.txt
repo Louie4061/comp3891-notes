@@ -1,0 +1,25 @@
+the main linux fs before the ext3.
+performance opt from BSD, FFS.
+if something goes wrong with the disk, we need to run the fs checker?
+ext3 has a solution to us.
+
+Recap:
+Each file in ext2 is reperesented by an inode.
+each inode has a unique number, has file metadata.
+system oriented number. try ls -i on unix to see the inode numbers
+they have mode, uid, gid ..., they have a reference count, number of 
+ways to get to the inode. direct blocks, single indirect.
+
+When inode stores the size of the file:
+Wse want to know the length according to the user,
+We can have a sparse file which can complicate some stuff. (lots of empty space??)
+We have a block count, size (offset of the highest byte written).
+We have 12 pointers for example for reference to different parts of our file, these are the
+direct blocks. The majority of files are pretty small e.g. text file.
+
+problem is what if we need to store files with data at offsets greater than 12 blocks.
+Single indirect block, contains nothing more than references to other blocks, when we expand,
+we have an array of entries that tell us where to find some more entries, we can go
+up to double, triple indirect.
+
+we need to perform repeated disk access. max file size on slides.

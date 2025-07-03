@@ -1,0 +1,70 @@
+tep 2: Map that logical block number to a physical block on disk
+Use this decision tree:
+
+🔹 Case 1: Direct block
+If block_number < 12:
+
+The data is in one of the 12 direct blocks.
+
+Just use: inode.direct[block_number]
+
+🔹 Case 2: Single indirect block
+If block_number >= 12 and < 12 + 1024:
+
+Subtract 12 to find index within the single indirect block:
+
+plaintext
+Copy code
+i = block_number - 12
+Load the single indirect block from disk (it contains 1024 pointers).
+
+Use pointer at index i.
+
+🔹 Case 3: Double indirect block
+If block_number >= 12 + 1024 and < 12 + 1024 + 1024²:
+
+Subtract base:
+
+plaintext
+Copy code
+i = block_number - (12 + 1024)
+Compute:
+
+first index: i / 1024 → which second-level pointer to use
+
+second index: i % 1024 → which data block within that
+
+Steps:
+
+Read the double indirect block (1024 pointers)
+
+Use index i / 1024 to find the correct indirect block
+
+Read that indirect block
+
+Use index i % 1024 to find the data block
+
+🔹 Case 4: Triple indirect block
+If block_number >= 12 + 1024 + 1024²:
+
+Similar logic, but now you need 3 levels:
+
+plaintext
+Copy code
+i = block_number - (12 + 1024 + 1024²)
+level1 = i / (1024 × 1024)
+level2 = (i / 1024) % 1024
+level3 = i % 1024
+Steps:
+
+Read triple indirect block → gives 1024 pointers to double indirect blocks
+
+Use level1 to pick which double indirect block
+
+Read that → gives 1024 pointers to single indirect blocks
+
+Use level2 to pick the indirect block
+
+Read that → gives 1024 data block pointers
+
+Use level3 to get the final data block

@@ -1,52 +1,43 @@
-åResource management:
-Memory fetch and store: 
-We need a pipeline, we fetch from the datacase and takes 1/2 cycles.
-AOU is idle, fetch unit is idle, then we isoltate that
+some of ext2:
+fairly complicated, custom data, not standard allocation approach
+mostly just a data structure.
+we also had the prefix trees. once used in telephones.
+- a data structure that uses digits to index the tree. held in an array?
+- we use some bits to map one table an etc.
+- a concurrency problem. no os permits cc ac to a fs.
+- two instances os x accessing stored data.
+- just using locking won't work, if the power goes out.
 
+we want to access files in min atomic way, the journal is a specific section
+of fs containing info of what we were trying to do. os 2 will be scanning the journal
+see what we were trying to do.
 
-// so we do this in a clock cycle for 5 diff Instructions
-Pipeline cycle:
-Instruction fetch,
-Instruction decode,
-Memory acess,
-write register back
+the ext3 fs:
+design goals: add journaling capability to the ext2 FS.
+backward and forward compat with ext2,
+if we have a completed we can see what else, (confused?)
 
-TLB: a cache for translation information
-mips3000 has a software loaded TLB, completely software controlled.
+option1: journal fs data structures updates, pro: efficient use of journal space
+start, delete dir entry, delete inode, release blocks 32, 17, 60.
+option2: journal disk block actions, pro: multiple updates can be aggregated to single update
+, also the journaling layer is fs-independent.
+upldate blockn (contains dir), update block n2, inode allcoation bitmap.
 
-Code walkthrough:
+see slides,
+we are running an ext3fs above a journal block device -> block device or journal.
 
-Kernel doesn't know anything about a user thread
+Journal blocking device:
+commit: write transaction data to the journal, multiple fs are commited in one go
+checkpoint: flush the journal to the disk, used when the 
+journal is full or the fs is being unmounted
 
-Kernel Threads, each has a sperate known stack, and context switch
-is done by the kernel, kernel knows the current thread.
-We can get there by exceptions (a trap belongs to a syscall exception) or interrupts
+Journaling modes:
+- ext3 supposrts two journaling modes:
+- metadata + data (enforces atomicity of all fs)
+- metadata journaling.
 
-exceptions are triggered by the instruction stream, synchronous, page faults, div 0 e.g.
-some architecture have unprecise exceptions, e.g. a few back
-triggered by the currently executing thread.
-
-a device interrupt is asynchronous. An I/O is an example of an interrupt.
-e.g. time interrupt.
-
-thread_exit OS161:
-Kernel has a ptr to the current kernel thread. 
-OS161 has a gaurd on the page, with a checksum to prevent against stack overlows.
-This is not the kernel stack but the user stack, then we go zombie state, 
-and we should never return.
-
-Trapping to the kernel, on our mips processer:
-Syscall trap is a few cycles.
-Same time as register dump and restore (in the stacks).
-Exiting the kern, About 80 cycles.
-
-OS161 has deadlock detection built into its locks. hangman
-
-A spinlock is a lock that causes a thread trying to acquire it to simply wait in a loop 
-("spin") while repeatedly checking whether the lock is available.
-
-In the OS code one of them is only required for single core,
-but in the second one, we have spinning protects from the other cpu,
-they are bad in the sense that they use more memory. There is a tradeoff.
-
-We have stuff with pipelining get more complicated with multicore.
+JBD:
+can keep the journal on block device or in a files
+jbd is independent of ext3-specific data structures
+ - separation concerns
+ - code reuse

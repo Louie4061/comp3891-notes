@@ -1,0 +1,219 @@
+Older systems had a single fs,
+we have devices with many drives.
+One drive with multiple fs, then we have
+we could have a universal fs, but this would be messy.
+We need some structure
+
+We have a virtual FS layer that abstracts tasks to the appropriate fs,
+if we plug in a (usb) drive it changes for a little bit,
+e.g. it connects to our fs.
+
+See slides for image with vfs. Buffer cache used to optimise the remaining memory
+of disks, disk scheduler is used to best control the physical device.
+
+On unix, everything starts at slash. Diff to microsoft.
+We have a home directory which is our main. We use mounting which takes
+a network file system and add it to our fs. We splice them together.
+We add two tree structures to make a bigger tree structure. 
+
+Single layer gives us interface to many file systems. On unix
+/dev, /proc has a file based interface to kernel data structures, processes
+currently running. 
+
+Structure:
+inode contains all of the adresses about the fs.
+fd tables -> open file tables -> VFS (vnode) -> FS (inode),
+
+OS161 has a vnode structure. We have a vfs interface, and we have a virtual node interface.
+Vnodes: Represents a file in memory, abstracted from the specific file system.
+Inodes: Represents a file on disk. (specific to fs)
+
+We have vnode is just: (Pointers to actual FS data + function table)
+and Inode is: (Actual file metadata & disk pointers)
+
+struct vnode:
+this is roughly object oriented. Unix and OS161 all have their own
+object oriented thing going.
+
+sync forces any data not written to the disk to be written to the disk.
+there is an operation called unmount, see slides for the struct fs.
+
+struct vnode:
+vn_refcount: (there can be multiple current uses of the file, num process ref)
+struct spinlock vn_countlock: (we need a lock to syncronise these files)
+vnode_ops (has info about the operations).
+
+we can find whether it is a character device or a disk device.
+user_ptr is used as it works like a void_ptr but provides some context
+
+all of the operations allow us to implement the various sys calls that are performed
+on files etc. (vfs_open) takes some flags etc, returns a vnode (rep of a file).
+
+OS161 contains the emufs file system. It just talks with the OS161.
+Slides for a normal function table for the emufs.
+
+With the system call interface we have a fd and open file table. But in the vfs interface
+we have to use the following stuff on slides.
+
+File descriptors:
+small integers for open files. a table somewhere that maps these to objects.
+There is a file pointer (offset) assoicated with each file descriptor. We also have
+modes assoicated with the fs, was it opened read-only etc. 
+
+An option:
+One giant table for our vnodes on the os, if two different proc have a file open
+multiple vnodes. 
+
+- A single global open file array, fd is an index on the array. we have they
+can be diff for diff process so we need each process to have its own open file array.
+
+Suppose a a program is piping to a file with a shell, each time the shell forks to run
+another programs, they need to be added to the same file but have the same offset. If we
+open a file to writing, we have to communicate the fd to the child process??
+
+We need to have three layers to account for the above issue for some reason.
+It is good as reads and writes both bumb the same fd index. 
+This three array structure is what we will have in OS161.
+
+Buffer cache:
+Buffer in a cache. When we have a source of output, we can't always write it all
+out, so we put it in a cache. It is where the writer can write to until the reader is 
+ready to accept the output. We prefer to write whole blocks to disk at a time, so sometimes
+we put stuff in this buffer until it gets to the correct size. 
+
+It is for processes that have written stuff that has not yet been written to drive.
+If the thread is going to far ahead we block it so it does not write too much.
+
+Cache is used as fast storage to temporarily hold data to speed up repeated acess data.
+Our home directory is something that is read all the time, so we will put some of our main
+used stuff from disk in memory. Whenever we ask the disk we check the buffer cache.
+
+Unix buffer cache:
+on read:
+- Hash the device, block numbers
+- check if match in muffer cache
+- yes, simply use the in memory copy
+- no follow the collision chain
+- if not found we load block from disk into buffer cache.
+
+How do we decide which to get rid of (replacement policy):
+fifo, least recently used.
+
+file system consistency:
+file data is expected to survive
+strict lru could keep modified critical data in memory forever if it is freq used.
+see slides for more in depth,
+if index block is out of date, the fs is confused about wher ethe file is now.
+it will prioritise trying to clean this data. we need to prioritise getting these
+written entries back out to disk. 
+
+in unix there is a flush daemon, flushes all modified blocks to disk every 30 seconds.
+
+alternatively use a write-through cache. all modified blocks are written immediately to disk.
+
+Lec2 - vfs
+Ext2 has a few adressable blocks that form a tree using index nodes
+to help us find our blocks, stored in the metadata. These indirects are for massive files
+
+In a standard inode structure (e.g., in ext2/ext3/ext4), the inode contains 15 block pointers:
+Index	Type	Description
+0–11	Direct	12 direct pointers to data blocks
+12	Single indirect	Points to 1 block that holds 1024 more pointers
+13	Double indirect	Points to 1 block → which points to 1024 blocks → each of those has 1024 pointers
+14	Triple indirect	Points to 1 block → 1024 → 1024 → 1024 data blocks
+
+- We can do calcs: (examinable).
+📍 Direct Pointers (e.g., first 12 pointers in inode)
+Each one points straight to a 4 KB data block.
+So, 12 direct pointers = 12 * 4 KB = 48 KB directly addressable.
+
+🔗 Single Indirect Pointer
+Points to a block containing 1024 pointers → each points to a 4 KB data block.
+So, 1024 * 4 KB = 4 MB addressable via single indirect.
+
+🔗🔗 Double Indirect Pointer
+Points to a block of 1024 pointers → each points to another block with 1024 pointers → each of those points to data blocks.
+So, 1024 * 1024 * 4 KB = 4 GB addressable via double indirect.
+
+🔗🔗🔗 Triple Indirect Pointer
+Points to a block of 1024 pointers → each to a block of 1024 pointers → each to a block of 1024 pointers → each to a data block.
+So, 1024³ * 4 KB = 4 TB addressable via triple indirect.
+
+To read and write 1 byte:
+Hence we have best case 1 access worse case 4
+we will get cache hits when we are going further.
+Our inode array only takes up like 5% of our drive.
+Boot Block -> Super Block -> inode array -> data block.
+
+Some problems with s5fs:
+Inodes at start of disk, data blocks end
+- long seek times, must read inode before data blocks
+only one superblock:
+- corrupt the superblock and the entire file system is lost
+block allocation was suboptimal:
+- consecutive free vlock list created at FS format time,
+(we have allocation and deallocation randomises the list).
+- inode free list also randomised over time:
+- directory listing resulted in random inode access patterns
+
+(we copy the superblock to all the block groups, same as group descriptors?) 
+Layout of a block group:
+superblock, group descriptors, data block bitmap, inode bitmap, inode table,
+data blocks.
+(this is all close together on disk so when spinning head, hence we have these close).
+
+Superblocks:
+- size of the file system, block size, similiar parameters
+- overall free inode and block counters
+- data indicating whether file system check is needed
+- replicated. (so fs can check, and look for one that makes sense).
+
+Group descriptors:
+location of bitmaps
+counter for free blocks and inodes in this group
+number of directories int eh group
+
+Performance considerations:
+- block groups cluster related indoes and data blocks
+- pre-allocation of blocks on write
+- aim to store files within a direcotry in the same group.
+(we take notes of stuff in there)
+
+ext2fs:
+directory is a special file, some unix let you load as normal file
+can grow in the same way, a fixed structure that lets us interperet as a number of records.
+we have info about the name of the length of the file
+- it encodes a mapping from some names to inode numbers
+
+ext2 is not fixed size??
+see slides for example of the directory: (gives bytes of name, 
+inode mapping, bytes in directory)
+- not good for really big directory
+
+hard links:
+we map multiple names to the same inode number. (see slides).
+opposed to soft links, where a filename maps to another filename which then points to the data
+the reference count of an inode, the number of hard links.
+we need to be careful with what the actual file owner is of a file,
+because if there is one, when it is deleted from one file 
+you can get weird behaviours. (this might just be for diff directories).
+
+Symbolic link:
+in ext2, the data block just contains a name to the file, as symbolic link.
+can point across fs boundaries. transparet for some ops, make by a special file attribute.
+
+FS reliability:
+Disk writes are buffered in ram, OS crash and power outage, lost data.
+commit writes to disk every 30 seconds, use the sync command to force a fs flush
+FS operations are non-atomic, incomplete transaction can leave fs in an inconsistent state.
+(we could have a data limit of timeout instead of 30 sec).
+
+Example deleting a file:
+dir entries -> i-nodes -> data-blocks
+Mark an inode as free, (we have a fault). (bit confused).
+we can;t get to any more steps.
+
+ext2 solution to these problems:
+e2fsck: scans the disk after an unclean shutdown and attempts to restore fs invariants
+journaling file systems - keep a journal of fs updates
+- before performing atomic updates eq, journal.

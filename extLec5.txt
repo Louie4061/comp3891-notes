@@ -1,0 +1,72 @@
+1. LFS as an "Extreme" Journaling Approach
+Traditional file systems use journaling to record changes before they’re committed, mainly for crash recovery.
+
+Log-Structured File Systems go further: all writes (data and metadata) are treated as a sequential log. This improves write performance, especially for small, frequent writes.
+
+2. Memory Growth Changes File System Priorities
+In older systems, memory (RAM) was limited, and paging (swapping data to disk) was common. Reads were costly.
+Today, RAM is abundant, so systems cache file contents in memory, making read performance less critical.
+Reads often happen from memory rather than disk, thanks to caching.
+
+3. Writes Are Now the Bottleneck
+Modern workloads (like compiling code or using mobile apps) create and delete many short-lived files.
+These frequent write operations, especially for small files, cause heavy metadata overhead.
+
+4. Metadata Writes Dominate
+When you create even a tiny file:
+An inode (file metadata) must be written.
+The data block is allocated and written.
+The directory structure must be updated.
+These require multiple synchronous writes (writes that must finish before continuing).
+As a result, the cost of writing metadata can exceed the cost of writing file data.
+
+5. Real-World Example: Mobile Devices
+Phones often run many apps, which open and close files constantly.
+This leads to lots of file system activity involving metadata (e.g., open logs, temp files).
+Efficient handling of this activity is critical for both performance and storage life (especially on flash storage).
+
+6. Main Design Challenge
+LFS aims to improve write performance by batching and writing sequentially.
+The challenge is to do this without harming read performance—especially for random reads or after a crash recovery.
+
+idea behind lfs, buffer the updates write all sequentially.
+inode needs to be updated, the direc entry updated, dir inode updated.
+if we just do this in that order to disk, we structure fs as a log where in sequential order
+of what happened. This is performance friendly why??
+
+there is a little problem here, there has to be some sort of a garbage collector.
+could be hard to find the inodes in this case, the logs are on disk. 
+the inodes would be scattered on disk, so we need an inode map, it is also cached.
+we have a magic location at the begining of the map, there could be a crash that could ruin stuff,
+we have shadow copying, ensures the consistency of databases. alternates betw two disks.
+challis algorithm, we alternate between the two, there is always a current version on open
+disk that does survive. you write some timestamps at your datablock, if they are the same,
+you are good otherwise. keep the pointer to inode map in the log file system.
+
+LFS vs FFS:
+log structured fs, we create a data block, then we need to update the inode that points to it.
+we alternate betw data block and inode. all writes are seq even if not buffered. then we
+write an inode map that points to all the prev system so no losses.
+
+on the berkley fs:
+ffs is very expensive as the disk is jumping all over the place as compared to the lfs.
+garbage collector, disks are finite in size, recovers blocks that are dead, no longer in use
+by the consulting current inode map. identifies unreachable blocks so they can be reused.
+cleaner: uses a combination of threaded log and copy and compact. slightly less performing,
+goes in one directiion so fairly Efficient. how does recovery work: (saving everything up to the current inode map).
+
+file system is check-pointed regularly which saves the a pointer to the current head of log.
+the current i-node map blocks.
+
+reliability:
+you generally don't synchronously write metadata, you can lose data but metadata remains,
+good in the sense we don't lose half of our disk, (why?).
+
+performance: small-file, create-read-delete:
+see slides.
+lfs supports writing of small files. outperforms ffs on small files
+writing is cheaper, even reading is cheaper.
+clustering: you use bigger allocation units, when we write,
+we serve a super block??, we need to pre-allocate sequential blocks??
+bsd is berkley structured fs. lfs outperforms on write,
+berkley is faster on reading.

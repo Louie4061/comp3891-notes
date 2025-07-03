@@ -1,0 +1,52 @@
+åResource management:
+Memory fetch and store: 
+We need a pipeline, we fetch from the datacase and takes 1/2 cycles.
+AOU is idle, fetch unit is idle, then we isoltate that
+
+
+// so we do this in a clock cycle for 5 diff Instructions
+Pipeline cycle:
+Instruction fetch,
+Instruction decode,
+Memory acess,
+write register back
+
+TLB: a cache for translation information
+mips3000 has a software loaded TLB, completely software controlled.
+
+Code walkthrough:
+
+Kernel doesn't know anything about a user thread
+
+Kernel Threads, each has a sperate known stack, and context switch
+is done by the kernel, kernel knows the current thread.
+We can get there by exceptions (a trap belongs to a syscall exception) or interrupts
+
+exceptions are triggered by the instruction stream, synchronous, page faults, div 0 e.g.
+some architecture have unprecise exceptions, e.g. a few back
+triggered by the currently executing thread.
+
+a device interrupt is asynchronous. An I/O is an example of an interrupt.
+e.g. time interrupt.
+
+thread_exit OS161:
+Kernel has a ptr to the current kernel thread. 
+OS161 has a gaurd on the page, with a checksum to prevent against stack overlows.
+This is not the kernel stack but the user stack, then we go zombie state, 
+and we should never return.
+
+Trapping to the kernel, on our mips processer:
+Syscall trap is a few cycles.
+Same time as register dump and restore (in the stacks).
+Exiting the kern, About 80 cycles.
+
+OS161 has deadlock detection built into its locks. hangman
+
+A spinlock is a lock that causes a thread trying to acquire it to simply wait in a loop 
+("spin") while repeatedly checking whether the lock is available.
+
+In the OS code one of them is only required for single core,
+but in the second one, we have spinning protects from the other cpu,
+they are bad in the sense that they use more memory. There is a tradeoff.
+
+We have stuff with pipelining get more complicated with multicore.
